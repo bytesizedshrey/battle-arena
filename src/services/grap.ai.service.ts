@@ -1,17 +1,26 @@
-import { StateSchema, MessagesValue, type GraphNode, StateGraph, START, END } from "@langchain/langgraph";
+import { StateSchema, MessagesValue, StateGraph, START, END } from "@langchain/langgraph";
 
-const State = new StateSchema({
-  messages: MessagesValue,
-});
+type JUDGEMENT = {
+    winner : "solution_1" | "solution_2";
+    solution_1_score : number;
+    solution_2_score : number;
+}
 
-const mockLlm: GraphNode<typeof State> = (state) => {
-  return { messages: [{ role: "ai", content: "hello world" }] };
-};
+type AiBattleState = {
+    messages : typeof MessagesValue;
+    solution_1 : string;
+    solution_2 : string;
+    judgement : JUDGEMENT;
+}
 
-const graph = new StateGraph(State)
-  .addNode("mock_llm", mockLlm)
-  .addEdge(START, "mock_llm")
-  .addEdge("mock_llm", END)
-  .compile();
-
-await graph.invoke({ messages: [{ role: "user", content: "hi!" }] });
+//data between node will transfer using state
+const state : AiBattleState = {
+    messages : MessagesValue,
+    solution_1 : "",
+    solution_2 : "",
+    judgement : {
+        winner : "solution_1",
+        solution_1_score : 0,
+        solution_2_score : 0
+    }
+}
