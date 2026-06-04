@@ -1,16 +1,16 @@
 import express from 'express'
-import useGraph from './services/grap.ai.service.js'
+import runGraph from './ai/graph.ai.js'
 
 const app = express()
 
-//health check
-app.get('/health',(req,res)=>{
-    res.status(200).json({status : 'ok'})
-})
-
-//useGraph
-app.post('/use-graph',async (req,res)=>{
-    await useGraph('who is charles leclerc?')
+app.get('/', async (req, res) => {
+    try {
+        const result = await runGraph('when is monaco gp gonna happen?')
+        res.json(result)
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({ message: 'something exploded 💀' })
+    }
 })
 
 export default app
