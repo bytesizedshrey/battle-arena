@@ -1,0 +1,526 @@
+@import "tailwindcss";
+
+/* ─── Design Tokens ──────────────────────────────────── */
+@theme {
+  /* Palette */
+  --color-surface-dim:               #0a0a0a;
+  --color-surface:                   #111111;
+  --color-surface-container-lowest:  #0c0c0c;
+  --color-surface-container-low:     #181818;
+  --color-surface-container:         #1e1e1e;
+  --color-surface-container-high:    #252525;
+  --color-surface-container-highest: #303030;
+  --color-surface-bright:            #3a3a3a;
+  --color-surface-variant:           #2c2c2c;
+  --color-background:                #0a0a0a;
+
+  --color-on-surface:         #d8d8d8;
+  --color-on-surface-variant: #909090;
+  --color-on-background:      #d8d8d8;
+
+  --color-primary:            #e0e0e0;
+  --color-on-primary:         #0d0d0d;
+  --color-primary-container:  #2e2e2e;
+  --color-on-primary-container: #b0b0b0;
+
+  --color-secondary:          #888888;
+  --color-on-secondary:       #0d0d0d;
+  --color-secondary-container:#222222;
+  --color-on-secondary-container: #aaaaaa;
+
+  --color-outline:            #404040;
+  --color-outline-variant:    #2a2a2a;
+  --color-inverse-surface:    #d8d8d8;
+  --color-inverse-on-surface: #1a1a1a;
+
+  /* Spacing */
+  --spacing-container-max:   1200px;
+  --spacing-gutter:          12px;
+  --spacing-margin-mobile:   12px;
+  --spacing-margin-desktop:  24px;
+  --spacing-unit:            4px;
+
+  /* Border radius — skeuomorphic keeps corners very tight */
+  --radius:     2px;
+  --radius-sm:  1px;
+  --radius-lg:  4px;
+  --radius-xl:  6px;
+  --radius-full:9999px;
+
+  /* Fonts */
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+
+/* ─── Root Reset ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: #0a0a0a;
+  color: #d8d8d8;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Skeuomorphic Material Layers ──────────────────── */
+
+/* Brushed-metal panel — main chassis material */
+.panel-metal {
+  background:
+    linear-gradient(180deg,
+      #303030 0%,
+      #242424 10%,
+      #1a1a1a 20%,
+      #161616 50%,
+      #1a1a1a 80%,
+      #272727 100%
+    );
+  border-top:    1px solid #4a4a4a;
+  border-left:   1px solid #3f3f3f;
+  border-right:  1px solid #0a0a0a;
+  border-bottom: 1px solid #0a0a0a;
+  box-shadow:
+    inset 1px 0 2px rgba(255,255,255,0.08),
+    inset -1px 0 2px rgba(0,0,0,0.8),
+    0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Deep inset / recessed area (like a screen recess) */
+.panel-inset {
+  background:
+    linear-gradient(135deg,
+      #040404 0%,
+      #0a0a0a 5%,
+      #0d0d0d 50%,
+      #111111 95%,
+      #0b0b0b 100%
+    );
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.9),
+    inset -2px -2px 4px rgba(255,255,255,0.02),
+    inset 0 1px 1px rgba(255,255,255,0.01);
+  border-top:    1px solid #030303;
+  border-left:   1px solid #030303;
+  border-right:  1px solid #282828;
+  border-bottom: 1px solid #282828;
+}
+
+/* Raised plate — sits above the chassis */
+.panel-raised {
+  background:
+    linear-gradient(155deg,
+      #353535 0%,
+      #2a2a2a 25%,
+      #222222 50%,
+      #1e1e1e 75%,
+      #262626 100%
+    );
+  box-shadow:
+    0 2px 0 #4a4a4a,
+    0 -2px 0 #050505,
+    2px 3px 8px rgba(0,0,0,0.8),
+    -1px -1px 4px rgba(0,0,0,0.6),
+    inset 0 1px 1px rgba(255,255,255,0.1),
+    inset 0 -1px 1px rgba(0,0,0,0.3);
+  border-top:    1px solid #3a3a3a;
+  border-left:   1px solid #3a3a3a;
+  border-right:  1px solid #1a1a1a;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+/* ─── CRT Screen Effect ──────────────────────────────── */
+.screen-crt {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    ),
+    linear-gradient(180deg, #0a0a0a 0%, #0d0d0d 100%);
+  box-shadow:
+    inset 0 0 30px rgba(0,0,0,0.6),
+    inset 0 0 80px rgba(0,0,0,0.3),
+    inset 3px 3px 8px rgba(0,0,0,0.9),
+    inset -3px -3px 8px rgba(0,0,0,0.9);
+}
+
+/* ─── Dot-matrix texture ─────────────────────────────── */
+.dot-matrix-bg {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.07) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+}
+
+/* ─── Dither overlay ─────────────────────────────────── */
+.dither-overlay {
+  position: relative;
+}
+.dither-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAAXNSR0IArs4c6QAAACpJREFUGFdjZEACDAwM/8H0PyD7P0SWAU6BBUA0E+wUUIYRKAZSABIAWAIAr10L9R3Y43IAAAAASUVORK5CYII=");
+  background-repeat: repeat;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+}
+.dither-overlay > * { position: relative; z-index: 1; }
+
+/* ─── Embossed / Debossed text ───────────────────────── */
+.text-embossed {
+  text-shadow:
+    0 1px 0 rgba(255,255,255,0.12),
+    0 -1px 0 rgba(0,0,0,0.7);
+}
+.text-debossed {
+  text-shadow:
+    0 -1px 0 rgba(255,255,255,0.06),
+    0 1px 0 rgba(0,0,0,0.8);
+  color: #6a6a6a;
+}
+
+/* ─── Skeuomorphic Buttons ───────────────────────────── */
+.btn-skeu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  user-select: none;
+  transition: all 100ms cubic-bezier(0.4, 0, 0.2, 1);
+  background:
+    linear-gradient(180deg,
+      #3a3a3a 0%,
+      #2a2a2a 40%,
+      #1f1f1f 60%,
+      #2a2a2a 100%
+    );
+  border-top:    1px solid #4a4a4a;
+  border-left:   1px solid #424242;
+  border-right:  1px solid #0c0c0c;
+  border-bottom: 1px solid #080808;
+  box-shadow:
+    0 3px 6px rgba(0,0,0,0.7),
+    inset 0 1px 2px rgba(255,255,255,0.12),
+    inset 0 -1px 1px rgba(0,0,0,0.4);
+  color: #d0d0d0;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.5);
+}
+.btn-skeu:hover {
+  background:
+    linear-gradient(180deg,
+      #424242 0%,
+      #323232 40%,
+      #282828 60%,
+      #323232 100%
+    );
+  color: #e8e8e8;
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.8),
+    inset 0 1px 2px rgba(255,255,255,0.15);
+}
+.btn-skeu:active {
+  background:
+    linear-gradient(180deg,
+      #0f0f0f 0%,
+      #1a1a1a 50%,
+      #1e1e1e 100%
+    );
+  border-top:    1px solid #080808;
+  border-left:   1px solid #0a0a0a;
+  border-right:  1px solid #3a3a3a;
+  border-bottom: 1px solid #424242;
+  box-shadow:
+    inset 0 3px 6px rgba(0,0,0,0.9),
+    inset 0 1px 0 rgba(0,0,0,0.5);
+  transform: translateY(2px);
+  color: #989898;
+}
+
+/* Primary action button (inverted) */
+.btn-skeu-primary {
+  background:
+    linear-gradient(180deg,
+      #d8d8d8 0%,
+      #b8b8b8 30%,
+      #909090 50%,
+      #a8a8a8 70%,
+      #c0c0c0 100%
+    );
+  border-top:    1px solid #e8e8e8;
+  border-left:   1px solid #d8d8d8;
+  border-right:  1px solid #505050;
+  border-bottom: 1px solid #383838;
+  box-shadow:
+    0 3px 6px rgba(0,0,0,0.8),
+    inset 0 1px 2px rgba(255,255,255,0.5),
+    inset 0 -1px 1px rgba(0,0,0,0.3);
+  color: #0a0a0a;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+  font-weight: 800;
+}
+.btn-skeu-primary:hover {
+  background:
+    linear-gradient(180deg,
+      #e8e8e8 0%,
+      #c8c8c8 30%,
+      #a0a0a0 50%,
+      #b8b8b8 70%,
+      #d0d0d0 100%
+    );
+  box-shadow:
+    0 4px 8px rgba(0,0,0,0.9),
+    inset 0 1px 2px rgba(255,255,255,0.6);
+}
+.btn-skeu-primary:active {
+  background:
+    linear-gradient(180deg,
+      #808080 0%,
+      #888888 40%,
+      #909090 60%,
+      #898989 100%
+    );
+  border-top: 1px solid #606060;
+  border-left: 1px solid #686868;
+  border-right: 1px solid #a0a0a0;
+  border-bottom: 1px solid #b0b0b0;
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.6),
+    inset 0 1px 0 rgba(0,0,0,0.7);
+  transform: translateY(2px);
+  color: #1a1a1a;
+}
+
+/* ─── Sidebar nav link (raised tab) ─────────────────── */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 80ms;
+  color: #707070;
+  border: 1px solid transparent;
+}
+.nav-item:hover {
+  color: #b0b0b0;
+  background:
+    linear-gradient(180deg, #222222 0%, #1a1a1a 100%);
+  border-color: #2e2e2e;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+}
+.nav-item.active {
+  color: #e0e0e0;
+  background:
+    linear-gradient(180deg, #0d0d0d 0%, #111111 100%);
+  border-top:    1px solid #0a0a0a;
+  border-left:   1px solid #0c0c0c;
+  border-right:  1px solid #2a2a2a;
+  border-bottom: 1px solid #2a2a2a;
+  box-shadow:
+    inset 1px 1px 3px rgba(0,0,0,0.7),
+    inset -1px -1px 0 rgba(255,255,255,0.02);
+  text-shadow: 0 1px 0 rgba(255,255,255,0.08), 0 -1px 0 rgba(0,0,0,0.6);
+}
+
+/* ─── Terminal input field ───────────────────────────── */
+.input-terminal {
+  width: 100%;
+  background:
+    linear-gradient(180deg, #030303 0%, #0a0a0a 50%, #0d0d0d 100%);
+  border-top:    1px solid #020202;
+  border-left:   1px solid #030303;
+  border-right:  1px solid #262626;
+  border-bottom: 1px solid #272727;
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.9),
+    inset -1px -1px 3px rgba(255,255,255,0.01),
+    inset 0 1px 1px rgba(0,0,0,0.5);
+  padding: 9px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #d8d8d8;
+  outline: none;
+  border-radius: 1px;
+  transition: all 100ms ease;
+}
+.input-terminal::placeholder { color: #454545; opacity: 0.8; }
+.input-terminal:focus {
+  border-top:    1px solid #1a1a1a;
+  border-left:   1px solid #1a1a1a;
+  border-right:  1px solid #353535;
+  border-bottom: 1px solid #353535;
+  box-shadow:
+    inset 3px 3px 8px rgba(0,0,0,0.95),
+    inset -1px -1px 3px rgba(255,255,255,0.02),
+    0 0 8px rgba(216, 216, 216, 0.1);
+  background:
+    linear-gradient(180deg, #040404 0%, #0b0b0b 50%, #0e0e0e 100%);
+}
+
+/* ─── Score gauge dial ───────────────────────────────── */
+.score-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background:
+    linear-gradient(145deg, #0a0a0a 0%, #141414 60%, #101010 100%);
+  border-top:    1px solid #050505;
+  border-left:   1px solid #080808;
+  border-right:  1px solid #2a2a2a;
+  border-bottom: 1px solid #2a2a2a;
+  box-shadow:
+    inset 2px 2px 6px rgba(0,0,0,0.9),
+    inset -1px -1px 2px rgba(255,255,255,0.02);
+  border-radius: 2px;
+  min-width: 70px;
+}
+
+/* ─── Section plate (label strip) ───────────────────── */
+.section-label {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  background:
+    linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%);
+  border-top:    1px solid #3a3a3a;
+  border-left:   1px solid #333333;
+  border-right:  1px solid #0e0e0e;
+  border-bottom: 1px solid #0e0e0e;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  color: #909090;
+  text-shadow: 0 -1px 0 rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05);
+}
+
+/* ─── Card / Solution panel ─────────────────────────── */
+.solution-card {
+  display: flex;
+  flex-direction: column;
+  background:
+    linear-gradient(135deg,
+      #0f0f0f 0%,
+      #0d0d0d 30%,
+      #0a0a0a 50%,
+      #0b0b0b 70%,
+      #0e0e0e 100%
+    );
+  border-top:    1px solid #060606;
+  border-left:   1px solid #060606;
+  border-right:  1px solid #2a2a2a;
+  border-bottom: 1px solid #2a2a2a;
+  box-shadow:
+    inset 2px 2px 6px rgba(0,0,0,0.85),
+    inset -1px -1px 2px rgba(255,255,255,0.02),
+    0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* ─── Divider ────────────────────────────────────────── */
+.divider-metal {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #252525, #1a1a1a, transparent);
+}
+
+/* ─── ASCII progress bar ─────────────────────────────── */
+.ascii-bar { font-size: 9px; letter-spacing: 1px; color: #606060; }
+
+/* ─── Blinking cursor ────────────────────────────────── */
+.cursor-blink::after {
+  content: '▌';
+  animation: cursor-flash 1s step-end infinite;
+  color: #909090;
+  font-size: 0.85em;
+}
+@keyframes cursor-flash { 50% { opacity: 0; } }
+
+/* ─── Custom scrollbar ───────────────────────────────── */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #0d0d0d 0%, #0a0a0a 100%);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg,
+    #383838 0%,
+    #2a2a2a 40%,
+    #1f1f1f 60%,
+    #2a2a2a 100%
+  );
+  border-radius: 2px;
+  border: 1px solid #1a1a1a;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg,
+    #424242 0%,
+    #323232 40%,
+    #282828 60%,
+    #323232 100%
+  );
+}
+
+/* ─── Rivet decorations ──────────────────────────────── */
+.rivet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 32%,
+      #464646 0%,
+      #2a2a2a 35%,
+      #1a1a1a 70%,
+      #0a0a0a 100%
+    );
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.15),
+    inset 0 -1px 2px rgba(0,0,0,0.9),
+    0 1px 2px rgba(0,0,0,0.6),
+    0 0 0 1px #050505;
+  flex-shrink: 0;
+}
+
+/* ─── LED indicator ──────────────────────────────────── */
+.led {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d0d0d0 0%, #606060 60%, #1a1a1a 100%);
+  box-shadow: 0 0 4px rgba(200,200,200,0.3), 0 0 0 1px #080808;
+  animation: led-pulse 3s ease-in-out infinite;
+}
+@keyframes led-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ─── Stitch-line border ─────────────────────────────── */
+.border-stitch {
+  border: 1px dashed #1e1e1e;
+}
+
+/* ─── Markdown-like text ─────────────────────────────── */
+.prose-terminal p    { margin-bottom: 8px; line-height: 1.65; }
+.prose-terminal strong { color: #d8d8d8; font-weight: 700; }
+.prose-terminal em   { color: #909090; font-style: italic; }
