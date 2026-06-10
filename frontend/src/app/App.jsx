@@ -1,188 +1,509 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { 
+  Play, Cpu, Activity, History, Copy, Check, Terminal, 
+  Sparkles, Brain, RefreshCw, Layers, CheckCircle2, XCircle, ChevronRight 
+} from 'lucide-react';
 import './App.css';
-import MessageItem from './components/MessageItem';
-import ChatInput from './components/ChatInput';
+import { DotmSquare10 } from "@/components/ui/dotm-square-10";
+import { DotmSquare3 } from "@/components/ui/dotm-square-3";
 
-const DEMO_DATA = {
-    "problem": "when is monaco gp gonna happen?",
-    "solution_1": "The **2024 Monaco Grand Prix** is scheduled to take place from **May 24–26, 2024**, as part of the **Formula 1 World Championship**.\n\nHere's the breakdown of the weekend schedule (local time, CEST):\n- **Friday, May 24**: Free Practice 1 & 2\n- **Saturday, May 25**: Free Practice 3 & **Qualifying**\n- **Sunday, May 26**: **Race** (start time typically **15:00 CEST**)\n\nMonaco is one of the most iconic races on the F1 calendar, known for its tight street circuit and glamorous atmosphere. Will you be watching? 🚀🏁",
-    "solution_2": "The Monaco Grand Prix is one of the most prestigious and iconic races on the Formula 1 calendar. It typically takes place **annually in May**, usually on the **last weekend of the month**. However, the exact date can vary slightly from year to year.\n\nFor the **2024 season**, the Monaco Grand Prix is scheduled to take place on **Sunday, May 26, 2024**. The weekend will include practice sessions on Friday, May 24, and qualifying on Saturday, May 25.\n\nAlways check the official Formula 1 schedule for the most up-to-date information, as dates can occasionally change due to unforeseen circumstances.",
-    "judge": {
-        "solution_1_score": 9.5,
-        "solution_2_score": 9,
-        "solution_1_reasoning": "Solution 1 absolutely cooked. It gave the exact dates for the 2024 Monaco GP and went the extra mile by breaking down the daily schedule with CEST times. Super clean formatting, no notes 🏎️🔥",
-        "solution_2_reasoning": "Solution 2 is also a total W. It explained when the GP usually happens (late May) which is great for general context, plus got the 2024 dates spot on. Just slightly less detailed than Solution 1 on the daily breakdown, but still very solid."
-    }
-};
+const PRESET_PROMPTS = [
+  "when is monaco gp gonna happen?",
+  "REST vs GraphQL: which one should I use for a real-time chat app?",
+  "Explain quantum computing to a 10 year old with a fun analogy 🚀",
+  "Write a high-performance binary search algorithm in Rust"
+];
 
 export default function App() {
-    const [messages, setMessages] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const messagesEndRef = useRef(null);
+  const [messages, setMessages] = useState([]);
+  const [activeMessage, setActiveMessage] = useState(null);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
+  const [backendStatus, setBackendStatus] = useState({
+    status: 'checking',
+    keys: { google: false, mistral: false, cohere: false }
+  });
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    // Check backend connection and keys on mount
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('http://localhost:3000/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          setBackendStatus(data);
+        } else {
+          setBackendStatus({ status: 'offline', keys: { google: false, mistral: false, cohere: false } });
+        }
+      } catch (err) {
+        console.error('Failed to fetch backend status:', err);
+        setBackendStatus({ status: 'offline', keys: { google: false, mistral: false, cohere: false } });
+      }
     };
+    checkStatus();
+  }, []);
 
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+  const handleSendMessage = async (promptText) => {
+    const textToSubmit = promptText || input;
+    if (!textToSubmit.trim() || isLoading) return;
 
-    const handleSendMessage = async (userMessage) => {
-        setIsLoading(true);
-        
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+    setIsLoading(true);
+    setInput('');
 
-        // Create a mock response with random scores
-        const newMessage = {
-            problem: userMessage,
-            solution_1: `This is a thoughtful response to your question: "${userMessage}"\n\nThe first solution provides a comprehensive approach by analyzing the key aspects and providing detailed breakdown:\n- **Point 1**: Addresses the core concern\n- **Point 2**: Provides additional context\n- **Point 3**: Offers actionable recommendations\n\nThis approach is thorough and covers most edge cases. 📊`,
-            solution_2: `Alternative perspective on your question about "${userMessage}":\n\nA different angle to consider the problem:\n- **Consideration A**: Highlights a practical angle\n- **Consideration B**: Explores underlying principles\n- **Consideration C**: Suggests complementary strategies\n\nThis perspective is equally valid and offers good insights too. ✨`,
-            judge: {
-                solution_1_score: 8.5 + Math.random() * 1.5,
-                solution_2_score: 8 + Math.random() * 1.5,
-                solution_1_reasoning: "Strong response that directly addresses the question with well-structured information and clear formatting. Could benefit from more specific examples.",
-                solution_2_reasoning: "Solid alternative approach that brings fresh perspective. Covers the topic well though slightly less detailed than solution 1."
-            }
-        };
-
-        setMessages([...messages, newMessage]);
-        setIsLoading(false);
+    // Create a temporary message with loading state
+    const tempMessage = {
+      problem: textToSubmit,
+      solution_1: '',
+      solution_2: '',
+      judge: null,
+      loading: true
     };
+    
+    // Add to list and select as active
+    const updatedMessages = [...messages, tempMessage];
+    setMessages(updatedMessages);
+    setActiveMessage(tempMessage);
 
-    return (
-        <div className="dither-overlay dot-matrix-bg bg-background text-on-surface font-mono overflow-hidden flex h-screen selection:bg-primary selection:text-background select-none">
-            {/* SideNavBar - Brushed-metal panel chassis */}
-            <aside className="fixed left-0 top-0 flex flex-col h-screen w-60 panel-metal z-50 border-r border-outline-variant">
-                <div className="p-4 border-b border-outline-variant relative">
-                    {/* Decorative metal rivets at corners */}
-                    <div className="absolute top-2.5 left-2.5 rivet"></div>
-                    <div className="absolute top-2.5 right-2.5 rivet"></div>
-                    
-                    <div className="mt-2 text-center">
-                        <h1 className="text-[13px] font-extrabold text-primary tracking-widest text-embossed">BATTLE ARENA</h1>
-                        <p className="text-[9px] uppercase tracking-widest text-on-surface-variant font-medium text-debossed mt-0.5">v4.0.2-stable</p>
-                    </div>
-                </div>
-                
-                <nav className="flex-1 overflow-y-auto pt-4 px-2 space-y-4">
-                    <div>
-                        <button className="btn-skeu-primary w-full py-2 px-3 flex items-center justify-center gap-2 active:translate-y-[1px]">
-                            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>add_box</span>
-                            <span className="text-[9px] uppercase tracking-wider font-extrabold">New Session</span>
-                        </button>
-                    </div>
-                    
-                    <div>
-                        <div className="px-2 mb-2 text-[8px] uppercase tracking-widest text-on-surface-variant font-bold text-debossed">
-                            System Archives
-                        </div>
-                        <ul className="space-y-1">
-                            <li>
-                                <a className="nav-item active" href="#">
-                                    <span className="material-symbols-outlined text-[13px]">history</span>
-                                    <span className="text-[9px] uppercase tracking-widest truncate">Neural Archives</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a className="nav-item" href="#">
-                                    <span className="material-symbols-outlined text-[13px]">folder_open</span>
-                                    <span className="text-[9px] uppercase tracking-widest truncate">Core Data Dump</span>
-                                </a>
-                            </li>
-                            <li>
-                                <a className="nav-item" href="#">
-                                    <span className="material-symbols-outlined text-[13px]">settings</span>
-                                    <span className="text-[9px] uppercase tracking-widest truncate">Node Settings</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </nav>
+    try {
+      const response = await fetch('http://localhost:3000/api/solve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problem: textToSubmit })
+      });
 
-                <div className="p-3 border-t border-outline-variant flex items-center justify-between text-[9px] text-on-surface-variant/70 relative">
-                    <div className="absolute bottom-2.5 left-2.5 rivet"></div>
-                    <div className="absolute bottom-2.5 right-2.5 rivet"></div>
-                    <div className="flex items-center gap-1.5 ml-3">
-                        <span className="led"></span>
-                        <span className="text-[8px] tracking-wider text-debossed font-bold uppercase">System Active</span>
-                    </div>
-                    <span className="text-[8px] tracking-wider font-bold opacity-60 mr-3">SYS_LOC_01</span>
-                </div>
-            </aside>
+      if (!response.ok) {
+        throw new Error('Server returned an error');
+      }
 
-            {/* Main Content Canvas with CRT screen and recess details */}
-            <main className="flex-1 ml-60 flex flex-col h-full overflow-hidden relative">
-                {/* TopAppBar */}
-                <header className="panel-raised flex justify-between items-center w-full px-6 h-11 text-on-surface z-40 border-b border-outline-variant relative">
-                    <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[14px] text-primary">memory</span>
-                        <span className="text-[9px] tracking-widest uppercase font-extrabold text-primary text-embossed">
-                            AI BATTLE ARENA
-                        </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                        <span className="ascii-bar font-mono opacity-65 text-[8px]">[▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒] 100%</span>
-                        <div className="rivet"></div>
-                    </div>
-                </header>
+      const data = await response.json();
+      
+      // Update the temp message with real data
+      const finalMessage = {
+        problem: textToSubmit,
+        solution_1: data.solution_1 || 'No solution generated.',
+        solution_2: data.solution_2 || 'No solution generated.',
+        judge: data.judge || {
+          solution_1_score: 0,
+          solution_2_score: 0,
+          solution_1_reasoning: 'Evaluation failed.',
+          solution_2_reasoning: 'Evaluation failed.'
+        },
+        loading: false
+      };
 
-                {/* Chat Workspace - Scrollable Messages Container */}
-                <div className="flex-1 overflow-y-auto screen-crt text-on-surface relative p-6 flex flex-col">
-                    <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col justify-center">
-                        {messages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full space-y-8">
-                                <div className="text-center">
-                                    <div className="text-[40px] mb-4 opacity-40">⚙️</div>
-                                    <h2 className="text-[18px] font-bold text-primary text-embossed mb-2 tracking-wide">Ai Battle Arena</h2>
-                                    <p className="text-[11px] text-on-surface-variant tracking-widest uppercase font-bold">System initialized and standing by</p>
-                                </div>
-                                
-                                <div className="max-w-md space-y-4">
-                                    <div className="p-4 panel-inset border-stitch rounded-sm">
-                                        <div className="text-[9px] font-bold text-primary mb-3 flex items-center gap-2 tracking-wide text-embossed uppercase">
-                                            <span className="led"></span>
-                                            Quick Start Guide
-                                        </div>
-                                        <ul className="space-y-2 text-[10px] text-on-surface-variant leading-relaxed">
-                                            <li className="flex gap-2">
-                                                <span className="text-primary font-bold">→</span>
-                                                <span>Enter your question in the input field below</span>
-                                            </li>
-                                            <li className="flex gap-2">
-                                                <span className="text-primary font-bold">→</span>
-                                                <span>System generates two different solutions</span>
-                                            </li>
-                                            <li className="flex gap-2">
-                                                <span className="text-primary font-bold">→</span>
-                                                <span>Judge evaluates and scores each response</span>
-                                            </li>
-                                            <li className="flex gap-2">
-                                                <span className="text-primary font-bold">→</span>
-                                                <span>Send multiple queries for comparison</span>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                {messages.map((message, idx) => (
-                                    <div key={idx}>
-                                        <MessageItem message={message} />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
-                </div>
+      setMessages(prev => prev.map(m => m.problem === textToSubmit ? finalMessage : m));
+      setActiveMessage(finalMessage);
+    } catch (error) {
+      console.error('API Error:', error);
+      // Fallback local mockup if backend is completely down
+      const score1 = 7.0 + Math.random() * 2.5;
+      const score2 = 6.5 + Math.random() * 3.0;
+      const errMessage = {
+        problem: textToSubmit,
+        solution_1: `**[OFFLINE SIMULATION - MISTRAL]**\nFailed to reach the backend at port 3000.\nHere is a local mock solution for: "${textToSubmit}"\n\n1. **Core Concept**: Verify that your backend server is running via \`npm run dev\` at the root.\n2. **Strategy**: Make sure port 3000 is open and not blocked by another process.\n3. **Recommendation**: Check your terminal logs for any compilation errors.`,
+        solution_2: `**[OFFLINE SIMULATION - COHERE]**\nConnection to backend refused.\n\n- **Analysis**: The backend Express server must be online to execute LangGraph flow.\n- **Approach**: Restart the server and try again.\n- **Next Steps**: Validate API keys in your .env file.`,
+        judge: {
+          solution_1_score: parseFloat(score1.toFixed(1)),
+          solution_2_score: parseFloat(score2.toFixed(1)),
+          solution_1_reasoning: "Local mockup triggered. Connection to backend failed 💀",
+          solution_2_reasoning: "Please start the backend server to run the actual model logic!"
+        },
+        loading: false
+      };
+      setMessages(prev => prev.map(m => m.problem === textToSubmit ? errMessage : m));
+      setActiveMessage(errMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-                {/* Chat Input Area */}
-                <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
-            </main>
+  const copyToClipboard = (text, index) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIndex(index);
+    setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const parseMarkdownBold = (text) => {
+    if (!text) return '';
+    const parts = text.split('**');
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <strong key={index} className="text-zinc-50 font-bold">{part}</strong>;
+      }
+      return part;
+    });
+  };
+
+  const renderTextContent = (text) => {
+    if (!text) return null;
+    return text.split('\n').map((line, idx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('- ')) {
+        return (
+          <li key={idx} className="ml-4 list-disc mb-1.5 pl-1 text-[11px] text-zinc-300">
+            {parseMarkdownBold(trimmed.substring(2))}
+          </li>
+        );
+      }
+      if (trimmed.startsWith('* ')) {
+        return (
+          <li key={idx} className="ml-4 list-disc mb-1.5 pl-1 text-[11px] text-zinc-300">
+            {parseMarkdownBold(trimmed.substring(2))}
+          </li>
+        );
+      }
+      if (trimmed.match(/^\d+\.\s/)) {
+        const dotIndex = trimmed.indexOf('.');
+        return (
+          <li key={idx} className="ml-4 list-decimal mb-1.5 pl-1 text-[11px] text-zinc-300">
+            {parseMarkdownBold(trimmed.substring(dotIndex + 1).trim())}
+          </li>
+        );
+      }
+      if (!trimmed) {
+        return <div key={idx} className="h-3" />;
+      }
+      return (
+        <p key={idx} className="mb-2.5 text-[11px] text-zinc-300 leading-relaxed">
+          {parseMarkdownBold(line)}
+        </p>
+      );
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#030303] text-zinc-200 p-4 md:p-6 lg:p-8 flex flex-col items-center">
+      {/* Top Banner / Navigation */}
+      <header className="w-full max-w-[1400px] mb-6 flex justify-between items-center border-b border-zinc-900 pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg">
+            <Layers className="w-4 h-4 text-zinc-400" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-widest text-white font-mono uppercase">BATTLE ARENA</h1>
+            <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-medium">Model Comparison Engine</p>
+          </div>
         </div>
-    );
+        <div className="flex items-center gap-4 text-[10px]">
+          <div className="flex items-center gap-2 bg-[#09090b] border border-zinc-900 px-3 py-1.5 rounded-lg">
+            <span className={`w-2 h-2 rounded-full ${backendStatus.status === 'online' ? 'bg-zinc-400 led-status' : 'bg-red-900'} `}></span>
+            <span className="text-zinc-400 uppercase tracking-widest">
+              SYS STATUS: {backendStatus.status.toUpperCase()}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Bento Grid */}
+      <div className="w-full max-w-[1400px] bento-grid">
+        
+        {/* Box 1: Prompt Input Area (Col span 8) */}
+        <section className="bento-card col-span-12 lg:col-span-8 flex flex-col justify-between min-h-[200px]">
+          <div>
+            <div className="flex items-center gap-2 mb-3 text-xs tracking-wider text-zinc-400 font-bold uppercase border-b border-zinc-900 pb-2">
+              <Terminal className="w-3.5 h-3.5" />
+              <span>Input Control Console</span>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="mt-2">
+              <div className="relative">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Ask a question for the arena to solve..."
+                  disabled={isLoading}
+                  rows={2}
+                  className="w-full bg-[#050505] border border-zinc-800 rounded-lg px-4 py-3 text-xs text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-700 transition duration-200 resize-none font-mono"
+                />
+              </div>
+              <div className="flex justify-between items-center mt-3">
+                <span className="text-[9px] text-zinc-500 tracking-wider">⌘ + ENTER TO DEPLOY</span>
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="flex items-center gap-2 px-5 py-2 bg-zinc-100 hover:bg-zinc-200 disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border-zinc-950 text-zinc-950 rounded-lg text-xs font-bold font-mono transition duration-150 border border-zinc-800 uppercase tracking-wider"
+                >
+                  {isLoading ? 'Processing' : 'Deploy'}
+                  <Play className="w-3 h-3 fill-current" />
+                </button>
+              </div>
+            </form>
+          </div>
+          
+          {/* Quick presets */}
+          <div className="mt-4 border-t border-zinc-900 pt-3">
+            <span className="text-[9px] text-zinc-500 uppercase tracking-wider block mb-2 font-bold">Standard Presets:</span>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_PROMPTS.map((p, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setInput(p)}
+                  disabled={isLoading}
+                  className="text-[10px] bg-[#050505] hover:bg-[#0f0f11] text-zinc-400 hover:text-zinc-200 border border-zinc-900 px-3 py-1.5 rounded-md transition font-mono truncate max-w-xs"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Box 2: Monitor / Registry (Col span 4) */}
+        <section className="bento-card col-span-12 lg:col-span-4 flex flex-col justify-between min-h-[200px]">
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-3 text-xs tracking-wider text-zinc-400 font-bold uppercase border-b border-zinc-900 pb-2">
+              <div className="flex items-center gap-2">
+                <Activity className="w-3.5 h-3.5" />
+                <span>System Registry</span>
+              </div>
+              <span className="text-[9px] text-zinc-600">v4.1.0</span>
+            </div>
+            
+            {/* API Key badges */}
+            <div className="space-y-2.5 mt-4">
+              <div className="flex justify-between items-center bg-[#050505] border border-zinc-900 p-2 rounded-lg">
+                <span className="text-[10px] text-zinc-400 font-mono">GOOGLE_API_KEY</span>
+                {backendStatus.keys.google ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-zinc-700" />
+                )}
+              </div>
+              <div className="flex justify-between items-center bg-[#050505] border border-zinc-900 p-2 rounded-lg">
+                <span className="text-[10px] text-zinc-400 font-mono">MISTRAL_API_KEY</span>
+                {backendStatus.keys.mistral ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-zinc-700" />
+                )}
+              </div>
+              <div className="flex justify-between items-center bg-[#050505] border border-zinc-900 p-2 rounded-lg">
+                <span className="text-[10px] text-zinc-400 font-mono">COHERE_API_KEY</span>
+                {backendStatus.keys.cohere ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-zinc-400" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-zinc-700" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t border-zinc-900 pt-3 mt-4">
+            <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Active Pulse</span>
+            {isLoading ? (
+              <DotmSquare3 size={32} dotSize={4} speed={2} className="text-zinc-300" />
+            ) : (
+              <DotmSquare3 size={32} dotSize={4} animated={false} className="text-zinc-700" />
+            )}
+          </div>
+        </section>
+
+        {/* Box 3: Sessions / History list (Col span 4) */}
+        <section className="bento-card col-span-12 lg:col-span-4 lg:row-span-2 flex flex-col justify-between min-h-[300px]">
+          <div>
+            <div className="flex items-center gap-2 mb-3 text-xs tracking-wider text-zinc-400 font-bold uppercase border-b border-zinc-900 pb-2">
+              <History className="w-3.5 h-3.5" />
+              <span>Neural Archives</span>
+            </div>
+            
+            <div className="space-y-2 overflow-y-auto max-h-[350px] pr-1 mt-3">
+              {messages.length === 0 ? (
+                <p className="text-[10px] text-zinc-600 font-mono italic text-center py-8">No session archives.</p>
+              ) : (
+                messages.map((m, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveMessage(m)}
+                    className={`w-full text-left p-3 rounded-lg border transition duration-200 font-mono flex items-center justify-between ${
+                      activeMessage?.problem === m.problem 
+                        ? 'bg-[#0f0f11] border-zinc-700 text-zinc-100' 
+                        : 'bg-[#050505] border-zinc-900 text-zinc-500 hover:text-zinc-300 hover:border-zinc-800'
+                    }`}
+                  >
+                    <div className="truncate pr-2">
+                      <span className="text-[9px] text-zinc-600 block mb-0.5 uppercase tracking-wider">
+                        SESSION {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] truncate block">{m.problem}</span>
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+          
+          <button
+            onClick={() => { setMessages([]); setActiveMessage(null); }}
+            disabled={messages.length === 0}
+            className="w-full flex items-center justify-center gap-2 py-2 bg-transparent hover:bg-zinc-950 disabled:opacity-30 border border-zinc-900 hover:border-zinc-800 rounded-lg text-[10px] text-zinc-400 font-bold uppercase tracking-wider transition"
+          >
+            Clear Archives
+          </button>
+        </section>
+
+        {/* Box 4: Solution 1 (Col span 4, tall) */}
+        <section className="bento-card col-span-12 md:col-span-6 lg:col-span-4 min-h-[350px] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 border-b border-zinc-900 pb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Solution_01</span>
+              </div>
+              <span className="text-[8px] bg-zinc-900 text-zinc-500 border border-zinc-850 px-2 py-0.5 rounded uppercase font-mono tracking-widest">
+                Mistral Medium
+              </span>
+            </div>
+
+            {activeMessage ? (
+              activeMessage.loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <DotmSquare10 size={36} dotSize={5} speed={2.5} className="text-zinc-500" />
+                  <span className="text-[9px] text-zinc-600 uppercase tracking-widest mt-4">Generating Solution</span>
+                </div>
+              ) : (
+                <div className="prose-custom text-[11px] text-zinc-300 font-mono max-h-[350px] overflow-y-auto pr-1">
+                  {renderTextContent(activeMessage.solution_1)}
+                </div>
+              )
+            ) : (
+              <p className="text-[10px] text-zinc-600 font-mono italic py-20 text-center">Standing by for battle...</p>
+            )}
+          </div>
+
+          {activeMessage && !activeMessage.loading && activeMessage.solution_1 && (
+            <div className="border-t border-zinc-900 pt-3 flex justify-between items-center">
+              <span className="text-[9px] text-zinc-500 uppercase tracking-wider">Length: {activeMessage.solution_1.length} chars</span>
+              <button
+                onClick={() => copyToClipboard(activeMessage.solution_1, 1)}
+                className="p-1.5 hover:bg-zinc-900 rounded-md transition text-zinc-400 hover:text-zinc-200"
+              >
+                {copiedIndex === 1 ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Box 5: Solution 2 (Col span 4, tall) */}
+        <section className="bento-card col-span-12 md:col-span-6 lg:col-span-4 min-h-[350px] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-3 border-b border-zinc-900 pb-2">
+              <div className="flex items-center gap-2">
+                <Cpu className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Solution_02</span>
+              </div>
+              <span className="text-[8px] bg-zinc-900 text-zinc-500 border border-zinc-850 px-2 py-0.5 rounded uppercase font-mono tracking-widest">
+                Cohere Command
+              </span>
+            </div>
+
+            {activeMessage ? (
+              activeMessage.loading ? (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <DotmSquare10 size={36} dotSize={5} speed={2.5} className="text-zinc-500" />
+                  <span className="text-[9px] text-zinc-600 uppercase tracking-widest mt-4">Generating Solution</span>
+                </div>
+              ) : (
+                <div className="prose-custom text-[11px] text-zinc-300 font-mono max-h-[350px] overflow-y-auto pr-1">
+                  {renderTextContent(activeMessage.solution_2)}
+                </div>
+              )
+            ) : (
+              <p className="text-[10px] text-zinc-600 font-mono italic py-20 text-center">Standing by for battle...</p>
+            )}
+          </div>
+
+          {activeMessage && !activeMessage.loading && activeMessage.solution_2 && (
+            <div className="border-t border-zinc-900 pt-3 flex justify-between items-center">
+              <span className="text-[9px] text-zinc-500 uppercase tracking-wider">Length: {activeMessage.solution_2.length} chars</span>
+              <button
+                onClick={() => copyToClipboard(activeMessage.solution_2, 2)}
+                className="p-1.5 hover:bg-zinc-900 rounded-md transition text-zinc-400 hover:text-zinc-200"
+              >
+                {copiedIndex === 2 ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Box 6: Judge Evaluation & Commentary (Col span 12 or 8 depending on layout) */}
+        <section className="bento-card col-span-12 lg:col-span-8 min-h-[200px]">
+          <div className="flex items-center gap-2 mb-3 text-xs tracking-wider text-zinc-400 font-bold uppercase border-b border-zinc-900 pb-2">
+            <Brain className="w-3.5 h-3.5 text-zinc-400" />
+            <span>AI Judge Report (Gemini Flash)</span>
+          </div>
+
+          {activeMessage ? (
+            activeMessage.loading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <RefreshCw className="w-5 h-5 text-zinc-500 animate-spin" />
+                <span className="text-[9px] text-zinc-600 uppercase tracking-widest mt-4">Waiting for scores...</span>
+              </div>
+            ) : activeMessage.judge ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-2">
+                {/* Scores section */}
+                <div className="col-span-1 flex md:flex-col justify-center gap-3">
+                  <div className="bg-[#050505] border border-zinc-900 p-3 rounded-xl text-center">
+                    <span className="text-2xl font-bold tracking-tight text-white block">
+                      {activeMessage.judge.solution_1_score.toFixed(1)}
+                    </span>
+                    <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">S_01 Score</span>
+                  </div>
+                  <div className="bg-[#050505] border border-zinc-900 p-3 rounded-xl text-center">
+                    <span className="text-2xl font-bold tracking-tight text-zinc-400 block">
+                      {activeMessage.judge.solution_2_score.toFixed(1)}
+                    </span>
+                    <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-wider">S_02 Score</span>
+                  </div>
+                </div>
+
+                {/* Commentary Details */}
+                <div className="col-span-1 md:col-span-3 bg-[#050505] border border-zinc-900 p-4 rounded-xl flex flex-col justify-between">
+                  <div className="space-y-3 font-mono text-[10px] text-zinc-400 leading-relaxed">
+                    <div>
+                      <strong className="text-white text-[9px] uppercase tracking-wider block mb-1">
+                        Solution 1 Assessment:
+                      </strong>
+                      <p className="italic">"{activeMessage.judge.solution_1_reasoning}"</p>
+                    </div>
+                    <div className="h-px bg-zinc-900 my-2"></div>
+                    <div>
+                      <strong className="text-white text-[9px] uppercase tracking-wider block mb-1">
+                        Solution 2 Assessment:
+                      </strong>
+                      <p className="italic">"{activeMessage.judge.solution_2_reasoning}"</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-[10px] text-zinc-600 font-mono italic py-10 text-center">No evaluation data available.</p>
+            )
+          ) : (
+            <p className="text-[10px] text-zinc-600 font-mono italic py-12 text-center">Deploy a prompt to get an evaluation.</p>
+          )}
+        </section>
+
+        {/* Box 7: System Information footer (Col span 4) */}
+        <footer className="bento-card col-span-12 lg:col-span-4 flex flex-col justify-center items-center text-center p-6">
+          <div className="flex items-center gap-1.5 text-zinc-600 mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-zinc-500" />
+            <span className="text-[9px] uppercase tracking-widest font-bold font-mono">Arena Mode Status</span>
+          </div>
+          <p className="text-[10px] text-zinc-400 font-mono leading-relaxed max-w-xs">
+            Deploying graph nodes. Judges are prompted to output neutral assessments with Gen Z commentary.
+          </p>
+        </footer>
+
+      </div>
+    </div>
+  );
 }
